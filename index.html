@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グリーンNH₃混焼最適化システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+            background: #0a0e1a;
+            color: #e0e6ed;
+            overflow-x: hidden;
+        }
+
+        /* Title Banner */
+        #titleBanner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a3d2c 0%, #1a5c4a 50%, #2d8b6f 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeOut 2.5s forwards;
+        }
+
+        @keyframes fadeOut {
+            0%, 80% { opacity: 1; }
+            100% { opacity: 0; pointer-events: none; }
+        }
+
+        #titleBanner h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        #titleBanner .subtitle {
+            font-size: 1.5rem;
+            color: #a8e6cf;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(to right, #0d1b2a, #1b3a4b);
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #2d8b6f;
+            box-shadow: 0 2px 10px rgba(45, 139, 111, 0.3);
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2d8b6f;
+            letter-spacing: 0.05em;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: #e0e6ed;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        nav a:hover, nav a.active {
+            background: #2d8b6f;
+            color: #ffffff;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #8b9aab;
+            font-size: 0.9rem;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+            padding: 1rem 1.2rem;
+            border-radius: 6px;
+            border: 1px solid #2a3f5f;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(to bottom, #2d8b6f, #4ecca3);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #8b9aab;
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.2rem;
+        }
+
+        .metric-trend {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .trend-up {
+            color: #4ecca3;
+        }
+
+        .trend-down {
+            color: #ff6b6b;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+            border: 1px solid #2a3f5f;
+            border-radius: 6px;
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.4rem 1rem;
+            border: 1px solid #2d8b6f;
+            background: transparent;
+            color: #2d8b6f;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .btn:hover, .btn.active {
+            background: #2d8b6f;
+            color: #ffffff;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+
+        /* Alert Panel */
+        .alert-panel {
+            background: linear-gradient(135deg, #2a1515 0%, #1a0a0a 100%);
+            border: 1px solid #ff6b6b;
+            border-radius: 6px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .alert-panel.warning {
+            background: linear-gradient(135deg, #2a2315 0%, #1a1a0a 100%);
+            border-color: #ffd93d;
+        }
+
+        .alert-panel.blinking {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.6; }
+        }
+
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .alert-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ff6b6b;
+        }
+
+        .alert-panel.warning .alert-title {
+            color: #ffd93d;
+        }
+
+        .alert-time {
+            font-size: 0.75rem;
+            color: #8b9aab;
+        }
+
+        .alert-message {
+            font-size: 0.85rem;
+            color: #e0e6ed;
+            line-height: 1.4;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .control-group {
+            background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+            border: 1px solid #2a3f5f;
+            border-radius: 6px;
+            padding: 1.2rem;
+        }
+
+        .control-label {
+            font-size: 0.85rem;
+            color: #8b9aab;
+            margin-bottom: 0.6rem;
+            display: block;
+        }
+
+        .slider-container {
+            margin-bottom: 1rem;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #2a3f5f;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2d8b6f;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2d8b6f;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d8b6f;
+            margin-top: 0.4rem;
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+            border: 1px solid #2a3f5f;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #0d1621;
+            padding: 0.8rem;
+            text-align: left;
+            font-weight: 600;
+            color: #2d8b6f;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .data-table td {
+            padding: 0.8rem;
+            border-top: 1px solid #2a3f5f;
+            font-size: 0.85rem;
+            color: #e0e6ed;
+        }
+
+        .data-table tr:hover {
+            background: rgba(45, 139, 111, 0.1);
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-optimal {
+            background: rgba(78, 204, 163, 0.2);
+            color: #4ecca3;
+        }
+
+        .status-warning {
+            background: rgba(255, 217, 61, 0.2);
+            color: #ffd93d;
+        }
+
+        .status-critical {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        /* Report Section */
+        .report-section {
+            background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+            border: 1px solid #2a3f5f;
+            border-radius: 8px;
+            padding: 2rem;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #2a3f5f;
+        }
+
+        .report-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .btn-primary {
+            padding: 0.8rem 2rem;
+            background: linear-gradient(135deg, #2d8b6f, #4ecca3);
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(45, 139, 111, 0.4);
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .report-metric {
+            background: rgba(45, 139, 111, 0.05);
+            padding: 1.5rem;
+            border-radius: 6px;
+            border-left: 4px solid #2d8b6f;
+        }
+
+        .report-metric-label {
+            font-size: 0.9rem;
+            color: #8b9aab;
+            margin-bottom: 0.5rem;
+        }
+
+        .report-metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d8b6f;
+        }
+
+        /* Settings Page */
+        .settings-group {
+            background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+            border: 1px solid #2a3f5f;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d8b6f;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid #2a3f5f;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #2a3f5f;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-name {
+            font-size: 0.95rem;
+            color: #e0e6ed;
+            margin-bottom: 0.3rem;
+        }
+
+        .setting-description {
+            font-size: 0.85rem;
+            color: #8b9aab;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a3f5f;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #2d8b6f;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #2d8b6f;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Title Banner -->
+    <div id="titleBanner">
+        <h1>グリーンNH₃混焼最適化システム</h1>
+        <div class="subtitle">AI-POWERED CO-FIRING OPTIMIZATION</div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">GreenNH₃ Optimizer Pro</div>
+        <nav>
+            <a class="nav-link active" data-page="dashboard">ダッシュボード</a>
+            <a class="nav-link" data-page="control">運転制御</a>
+            <a class="nav-link" data-page="analytics">分析</a>
+            <a class="nav-link" data-page="reports">レポート</a>
+            <a class="nav-link" data-page="settings">設定</a>
+        </nav>
+        <div class="user-info">
+            <span id="currentTime">--:--:--</span>
+            <span>|</span>
+            <span>発電所A - 運転中</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Dashboard Page -->
+        <div id="dashboard" class="page active">
+            <!-- Alert Panel -->
+            <div id="alertPanel" class="alert-panel warning" style="display: none;">
+                <div class="alert-header">
+                    <div class="alert-title">システム警告</div>
+                    <div class="alert-time" id="alertTime"></div>
+                </div>
+                <div class="alert-message" id="alertMessage"></div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-label">混焼率</div>
+                    <div class="metric-value"><span id="coFiringRate">0.0</span>%</div>
+                    <div class="metric-trend trend-up">
+                        <span>▲</span>
+                        <span id="coFiringTrend">0.0</span>%
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">CO₂排出量</div>
+                    <div class="metric-value"><span id="co2Emission">0</span> t/h</div>
+                    <div class="metric-trend trend-down">
+                        <span>▼</span>
+                        <span id="co2Trend">0</span> t/h
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">燃料コスト</div>
+                    <div class="metric-value">¥<span id="fuelCost">0</span>M</div>
+                    <div class="metric-trend trend-down">
+                        <span>▼</span>
+                        <span id="costTrend">0.0</span>%
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">最適化効率</div>
+                    <div class="metric-value"><span id="efficiency">0</span>%</div>
+                    <div class="metric-trend trend-up">
+                        <span>▲</span>
+                        <span id="efficiencyTrend">0</span>%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Chart -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">リアルタイム混焼パラメータ</div>
+                    <div class="chart-controls">
+                        <button class="btn active">1時間</button>
+                        <button class="btn">6時間</button>
+                        <button class="btn">24時間</button>
+                    </div>
+                </div>
+                <canvas id="realtimeChart" class="chart-canvas"></canvas>
+            </div>
+
+            <!-- Status Table -->
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ユニット</th>
+                            <th>混焼率</th>
+                            <th>出力</th>
+                            <th>NH₃流量</th>
+                            <th>NOx濃度</th>
+                            <th>ステータス</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statusTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Control Page -->
+        <div id="control" class="page">
+            <div class="control-panel">
+                <div class="control-group">
+                    <label class="control-label">目標混焼率</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="35" class="slider" id="targetRateSlider">
+                        <div class="slider-value"><span id="targetRateValue">35</span>%</div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">最大出力設定</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="1000" value="650" class="slider" id="maxOutputSlider">
+                        <div class="slider-value"><span id="maxOutputValue">650</span> MW</div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">コスト優先度</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="70" class="slider" id="costPrioritySlider">
+                        <div class="slider-value"><span id="costPriorityValue">70</span>%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 2rem;">
+                <div class="chart-header">
+                    <div class="chart-title">最適化シミュレーション</div>
+                    <button class="btn-primary" onclick="runSimulation()">シミュレーション実行</button>
+                </div>
+                <canvas id="simulationChart" class="chart-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Analytics Page -->
+        <div id="analytics" class="page">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">週次パフォーマンス分析</div>
+                    <div class="chart-controls">
+                        <button class="btn active" onclick="drawPerformanceChart()">今週</button>
+                        <button class="btn" onclick="drawPerformanceChart()">先週</button>
+                        <button class="btn" onclick="drawPerformanceChart()">先月</button>
+                    </div>
+                </div>
+                <canvas id="performanceChart" class="chart-canvas"></canvas>
+            </div>
+
+            <div class="dashboard-grid" style="margin-top: 2rem;">
+                <div class="metric-card">
+                    <div class="metric-label">平均混焼率</div>
+                    <div class="metric-value">34.2%</div>
+                    <div class="metric-trend trend-up">
+                        <span>▲</span>
+                        <span>2.3%</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">CO₂削減量</div>
+                    <div class="metric-value">1,245 t</div>
+                    <div class="metric-trend trend-up">
+                        <span>▲</span>
+                        <span>156 t</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">コスト削減</div>
+                    <div class="metric-value">¥3.2M</div>
+                    <div class="metric-trend trend-up">
+                        <span>▲</span>
+                        <span>12.5%</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">稼働時間</div>
+                    <div class="metric-value">167.5 h</div>
+                    <div class="metric-trend trend-up">
+                        <span>▲</span>
+                        <span>99.7%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Page -->
+        <div id="reports" class="page">
+            <div class="report-section">
+                <div class="report-header">
+                    <div class="report-title">運転レポート生成</div>
+                    <button class="btn-primary" onclick="generateReport()">レポート生成</button>
+                </div>
+
+                <div class="report-grid">
+                    <div class="report-metric">
+                        <div class="report-metric-label">本日の混焼実績</div>
+                        <div class="report-metric-value">35.8%</div>
+                    </div>
+                    <div class="report-metric">
+                        <div class="report-metric-label">本日のCO₂削減</div>
+                        <div class="report-metric-value">187 t</div>
+                    </div>
+                    <div class="report-metric">
+                        <div class="report-metric-label">本日のコスト削減</div>
+                        <div class="report-metric-value">¥0.48M</div>
+                    </div>
+                    <div class="report-metric">
+                        <div class="report-metric-label">最適化達成率</div>
+                        <div class="report-metric-value">94.3%</div>
+                    </div>
+                </div>
+
+                <div class="data-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>レポート名</th>
+                                <th>期間</th>
+                                <th>生成日時</th>
+                                <th>アクション</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>月次運転レポート - 2025年10月</td>
+                                <td>2025/10/01 - 2025/10/31</td>
+                                <td>2025/11/01 09:00</td>
+                                <td><button class="btn" onclick="downloadReport('monthly_oct')">ダウンロード</button></td>
+                            </tr>
+                            <tr>
+                                <td>週次最適化分析 - 第43週</td>
+                                <td>2025/10/21 - 2025/10/27</td>
+                                <td>2025/10/28 08:30</td>
+                                <td><button class="btn" onclick="downloadReport('weekly_43')">ダウンロード</button></td>
+                            </tr>
+                            <tr>
+                                <td>CO₂削減実績サマリー - Q3</td>
+                                <td>2025/07/01 - 2025/09/30</td>
+                                <td>2025/10/05 14:20</td>
+                                <td><button class="btn" onclick="downloadReport('co2_q3')">ダウンロード</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings" class="page">
+            <div class="settings-group">
+                <div class="settings-title">システム設定</div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-name">自動最適化</div>
+                        <div class="setting-description">AIによる自動運転制御を有効化</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-name">リアルタイム警報</div>
+                        <div class="setting-description">異常値検出時の即時通知</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-name">データ収集頻度</div>
+                        <div class="setting-description">センサーデータの取得間隔: 1秒</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-title">アラート設定</div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-name">NOx濃度上限警告</div>
+                        <div class="setting-description">しきい値: 50 ppm</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-name">混焼率変動警告</div>
+                        <div class="setting-description">±5%以上の急激な変動を検知</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-title">レポート設定</div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-name">自動日次レポート</div>
+                        <div class="setting-description">毎日8:00に前日レポートを生成</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-name">週次サマリー送信</div>
+                        <div class="setting-description">毎週月曜日に週次レポートを配信</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize
+        let currentPage = 'dashboard';
+        let animationInterval;
+        let chartData = {
+            coFiring: [],
+            co2: [],
+            cost: [],
+            labels: []
+        };
+
+        // Update Time
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ja-JP');
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.dataset.page;
+                
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(page).classList.add('active');
+                
+                currentPage = page;
+                
+                // Draw performance chart when switching to analytics
+                if (page === 'analytics') {
+                    setTimeout(() => drawPerformanceChart(), 100);
+                }
+            });
+        });
+
+        // Sliders
+        document.getElementById('targetRateSlider').addEventListener('input', (e) => {
+            document.getElementById('targetRateValue').textContent = e.target.value;
+        });
+
+        document.getElementById('maxOutputSlider').addEventListener('input', (e) => {
+            document.getElementById('maxOutputValue').textContent = e.target.value;
+        });
+
+        document.getElementById('costPrioritySlider').addEventListener('input', (e) => {
+            document.getElementById('costPriorityValue').textContent = e.target.value;
+        });
+
+        // Animate Dashboard Metrics
+        function animateMetrics() {
+            // Co-firing rate
+            const coFiringRate = 32 + Math.random() * 6;
+            document.getElementById('coFiringRate').textContent = coFiringRate.toFixed(1);
+            document.getElementById('coFiringTrend').textContent = (Math.random() * 3).toFixed(1);
+
+            // CO2 Emission
+            const co2 = 145 + Math.random() * 30;
+            document.getElementById('co2Emission').textContent = co2.toFixed(0);
+            document.getElementById('co2Trend').textContent = (5 + Math.random() * 5).toFixed(0);
+
+            // Fuel Cost
+            const cost = 2.4 + Math.random() * 0.4;
+            document.getElementById('fuelCost').textContent = cost.toFixed(1);
+            document.getElementById('costTrend').textContent = (Math.random() * 5).toFixed(1);
+
+            // Efficiency
+            const efficiency = 88 + Math.random() * 8;
+            document.getElementById('efficiency').textContent = efficiency.toFixed(0);
+            document.getElementById('efficiencyTrend').textContent = (Math.random() * 3).toFixed(0);
+
+            // Random alerts
+            if (Math.random() < 0.05) {
+                showAlert();
+            }
+        }
+
+        // Show Alert
+        function showAlert() {
+            const alerts = [
+                { type: 'warning', message: 'NH₃流量が目標値から3%逸脱しています。自動補正を実行中です。' },
+                { type: 'critical', message: 'ユニット2のNOx濃度が上限に近づいています。混焼率を調整してください。' },
+                { type: 'warning', message: '外気温の上昇により燃焼効率が低下しています。冷却システムを確認してください。' }
+            ];
+            
+            const alert = alerts[Math.floor(Math.random() * alerts.length)];
+            const panel = document.getElementById('alertPanel');
+            
+            panel.className = `alert-panel ${alert.type} blinking`;
+            panel.style.display = 'block';
+            
+            document.getElementById('alertTime').textContent = new Date().toLocaleTimeString('ja-JP');
+            document.getElementById('alertMessage').textContent = alert.message;
+            
+            setTimeout(() => {
+                panel.classList.remove('blinking');
+            }, 5000);
+        }
+
+        // Update Status Table
+        function updateStatusTable() {
+            const tbody = document.getElementById('statusTableBody');
+            const units = ['ユニット1', 'ユニット2', 'ユニット3', 'ユニット4'];
+            
+            tbody.innerHTML = units.map(unit => {
+                const rate = (30 + Math.random() * 15).toFixed(1);
+                const output = (600 + Math.random() * 150).toFixed(0);
+                const flow = (25 + Math.random() * 10).toFixed(1);
+                const nox = (35 + Math.random() * 10).toFixed(1);
+                const status = nox < 42 ? 'optimal' : nox < 47 ? 'warning' : 'critical';
+                const statusText = nox < 42 ? '最適' : nox < 47 ? '注意' : '警告';
+                
+                return `
+                    <tr>
+                        <td>${unit}</td>
+                        <td>${rate}%</td>
+                        <td>${output} MW</td>
+                        <td>${flow} t/h</td>
+                        <td>${nox} ppm</td>
+                        <td><span class="status-badge status-${status}">${statusText}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Draw Charts
+        function drawRealtimeChart() {
+            const canvas = document.getElementById('realtimeChart');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Add new data point
+            const now = new Date();
+            chartData.labels.push(now.toLocaleTimeString('ja-JP'));
+            chartData.coFiring.push(32 + Math.random() * 6);
+            chartData.co2.push(145 + Math.random() * 30);
+            chartData.cost.push(2.4 + Math.random() * 0.4);
+            
+            // Keep only last 60 points
+            if (chartData.labels.length > 60) {
+                chartData.labels.shift();
+                chartData.coFiring.shift();
+                chartData.co2.shift();
+                chartData.cost.shift();
+            }
+            
+            // Draw grid
+            ctx.strokeStyle = '#2a3f5f';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i <= 10; i++) {
+                const y = (canvas.height / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Draw co-firing rate line
+            ctx.strokeStyle = '#2d8b6f';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            chartData.coFiring.forEach((value, index) => {
+                const x = (canvas.width / (chartData.coFiring.length - 1)) * index;
+                const y = canvas.height - (value / 50 * canvas.height);
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Draw labels
+            ctx.fillStyle = '#8b9aab';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('混焼率 (%)', 10, 20);
+            ctx.fillStyle = '#2d8b6f';
+            ctx.fillText(chartData.coFiring[chartData.coFiring.length - 1].toFixed(1) + '%', canvas.width - 60, 20);
+        }
+
+        function drawPerformanceChart() {
+            const canvas = document.getElementById('performanceChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Weekly data
+            const days = ['月', '火', '水', '木', '金', '土', '日'];
+            const coFiringData = [32.5, 34.2, 35.8, 33.9, 36.1, 34.7, 35.3];
+            const co2Data = [152, 148, 142, 149, 139, 145, 143];
+            const efficiencyData = [88, 91, 93, 89, 94, 92, 93];
+            
+            const barWidth = canvas.width / (days.length * 3 + 1);
+            const spacing = barWidth / 2;
+            
+            // Draw grid
+            ctx.strokeStyle = '#2a3f5f';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i <= 10; i++) {
+                const y = (canvas.height / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Draw bars
+            days.forEach((day, index) => {
+                const x = spacing + (index * (barWidth * 3 + spacing));
+                
+                // Co-firing rate bar
+                const coFiringHeight = (coFiringData[index] / 50) * canvas.height * 0.8;
+                ctx.fillStyle = '#2d8b6f';
+                ctx.fillRect(x, canvas.height - coFiringHeight, barWidth * 0.8, coFiringHeight);
+                
+                // CO2 bar (normalized)
+                const co2Height = (co2Data[index] / 200) * canvas.height * 0.8;
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fillRect(x + barWidth, canvas.height - co2Height, barWidth * 0.8, co2Height);
+                
+                // Efficiency bar
+                const effHeight = (efficiencyData[index] / 100) * canvas.height * 0.8;
+                ctx.fillStyle = '#4ecca3';
+                ctx.fillRect(x + barWidth * 2, canvas.height - effHeight, barWidth * 0.8, effHeight);
+                
+                // Day labels
+                ctx.fillStyle = '#8b9aab';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(day, x + barWidth * 1.5, canvas.height - 5);
+            });
+            
+            // Legend
+            const legendY = 25;
+            ctx.textAlign = 'left';
+            
+            ctx.fillStyle = '#2d8b6f';
+            ctx.fillRect(10, legendY, 12, 12);
+            ctx.fillStyle = '#8b9aab';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('混焼率 (%)', 28, legendY + 10);
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(120, legendY, 12, 12);
+            ctx.fillStyle = '#8b9aab';
+            ctx.fillText('CO₂排出 (t/h)', 138, legendY + 10);
+            
+            ctx.fillStyle = '#4ecca3';
+            ctx.fillRect(250, legendY, 12, 12);
+            ctx.fillStyle = '#8b9aab';
+            ctx.fillText('効率 (%)', 268, legendY + 10);
+        }
+
+        // Simulation
+        function runSimulation() {
+            const canvas = document.getElementById('simulationChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Show loading state
+            const controlPanel = document.querySelector('#control .chart-container');
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(10, 14, 26, 0.9);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 100;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="color: #2d8b6f; font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">
+                    AI最適化シミュレーション実行中
+                </div>
+                <div class="loading"></div>
+                <div style="color: #8b9aab; font-size: 0.85rem; margin-top: 1rem;">
+                    1000パターンを分析しています...
+                </div>
+            `;
+            
+            controlPanel.style.position = 'relative';
+            controlPanel.appendChild(overlay);
+            
+            // Simulate calculation
+            setTimeout(() => {
+                overlay.remove();
+                
+                // Draw simulation results
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw grid
+                ctx.strokeStyle = '#2a3f5f';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 10; i++) {
+                    const y = (canvas.height / 10) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+                
+                // Current state line (red)
+                ctx.strokeStyle = '#ff6b6b';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                const currentRate = parseFloat(document.getElementById('targetRateValue').textContent);
+                const currentY = canvas.height - (currentRate / 100 * canvas.height);
+                ctx.moveTo(0, currentY);
+                ctx.lineTo(canvas.width, currentY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Optimized trajectory (green)
+                ctx.strokeStyle = '#2d8b6f';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                const points = 50;
+                const targetRate = 38.5;
+                
+                for (let i = 0; i < points; i++) {
+                    const x = (canvas.width / (points - 1)) * i;
+                    const progress = i / points;
+                    const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                    const value = currentRate + (targetRate - currentRate) * eased;
+                    const noise = Math.sin(i * 0.5) * 2; // Add realistic fluctuation
+                    const y = canvas.height - ((value + noise) / 100 * canvas.height);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                // Draw labels
+                ctx.fillStyle = '#8b9aab';
+                ctx.font = '11px sans-serif';
+                ctx.fillText('現在の混焼率', 10, currentY - 10);
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fillText(currentRate + '%', canvas.width - 60, currentY - 10);
+                
+                ctx.fillStyle = '#8b9aab';
+                ctx.fillText('最適化予測', 10, canvas.height - (targetRate / 100 * canvas.height) + 20);
+                ctx.fillStyle = '#2d8b6f';
+                ctx.fillText(targetRate + '%', canvas.width - 60, canvas.height - (targetRate / 100 * canvas.height) + 20);
+                
+                // Show result modal
+                const resultModal = document.createElement('div');
+                resultModal.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+                    border: 2px solid #2d8b6f;
+                    border-radius: 12px;
+                    padding: 2.5rem;
+                    z-index: 1000;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+                    min-width: 500px;
+                `;
+                
+                resultModal.innerHTML = `
+                    <div style="color: #2d8b6f; font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center;">
+                        ✓ シミュレーション完了
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="background: rgba(45, 139, 111, 0.1); padding: 1rem; border-radius: 6px; border-left: 3px solid #2d8b6f;">
+                            <div style="color: #8b9aab; font-size: 0.8rem; margin-bottom: 0.3rem;">最適混焼率</div>
+                            <div style="color: #2d8b6f; font-size: 1.5rem; font-weight: 700;">38.5%</div>
+                        </div>
+                        <div style="background: rgba(78, 204, 163, 0.1); padding: 1rem; border-radius: 6px; border-left: 3px solid #4ecca3;">
+                            <div style="color: #8b9aab; font-size: 0.8rem; margin-bottom: 0.3rem;">予測CO₂削減</div>
+                            <div style="color: #4ecca3; font-size: 1.5rem; font-weight: 700;">12.3%</div>
+                        </div>
+                        <div style="background: rgba(45, 139, 111, 0.1); padding: 1rem; border-radius: 6px; border-left: 3px solid #2d8b6f;">
+                            <div style="color: #8b9aab; font-size: 0.8rem; margin-bottom: 0.3rem;">予測コスト削減</div>
+                            <div style="color: #2d8b6f; font-size: 1.5rem; font-weight: 700;">¥0.85M</div>
+                        </div>
+                        <div style="background: rgba(78, 204, 163, 0.1); padding: 1rem; border-radius: 6px; border-left: 3px solid #4ecca3;">
+                            <div style="color: #8b9aab; font-size: 0.8rem; margin-bottom: 0.3rem;">最適化効率</div>
+                            <div style="color: #4ecca3; font-size: 1.5rem; font-weight: 700;">96.2%</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: #8b9aab; font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.5;">
+                        推奨される最適混焼率は38.5%です。<br>
+                        この設定により月間¥0.85Mのコスト削減が見込まれます。
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <button class="btn-primary" onclick="applySimulation(this.parentElement.parentElement)">
+                            設定を適用
+                        </button>
+                        <button class="btn" onclick="this.parentElement.parentElement.remove()">
+                            閉じる
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(resultModal);
+            }, 2500);
+        }
+        
+        function applySimulation(modal) {
+            document.getElementById('targetRateSlider').value = 38.5;
+            document.getElementById('targetRateValue').textContent = '38.5';
+            modal.remove();
+            
+            // Show confirmation
+            const confirm = document.createElement('div');
+            confirm.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #2d8b6f, #4ecca3);
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(45, 139, 111, 0.4);
+                z-index: 1001;
+                font-weight: 600;
+            `;
+            confirm.textContent = '✓ 最適化設定を適用しました';
+            document.body.appendChild(confirm);
+            
+            setTimeout(() => {
+                confirm.style.transition = 'opacity 0.5s';
+                confirm.style.opacity = '0';
+                setTimeout(() => confirm.remove(), 500);
+            }, 3000);
+        }
+
+        // Generate Report
+        function generateReport() {
+            const reportWindow = document.createElement('div');
+            reportWindow.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+                border: 2px solid #2d8b6f;
+                border-radius: 12px;
+                padding: 3rem;
+                z-index: 1000;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+                text-align: center;
+            `;
+            
+            reportWindow.innerHTML = `
+                <div style="color: #2d8b6f; font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">
+                    レポート生成中
+                </div>
+                <div style="color: #8b9aab; margin-bottom: 2rem;">
+                    データを集計しています...
+                </div>
+                <div class="loading" style="margin: 0 auto;"></div>
+            `;
+            
+            document.body.appendChild(reportWindow);
+            
+            setTimeout(() => {
+                reportWindow.innerHTML = `
+                    <div style="color: #4ecca3; font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">
+                        ✓ レポート生成完了
+                    </div>
+                    <div style="color: #e0e6ed; margin-bottom: 2rem;">
+                        運転レポート_20251102.pdf が生成されました
+                    </div>
+                    <button class="btn-primary" onclick="this.parentElement.parentElement.remove()">
+                        閉じる
+                    </button>
+                `;
+            }, 2000);
+        }
+
+        // Download Report
+        function downloadReport(reportId) {
+            const downloadWindow = document.createElement('div');
+            downloadWindow.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #1a2332 0%, #0f1621 100%);
+                border: 2px solid #2d8b6f;
+                border-radius: 12px;
+                padding: 3rem;
+                z-index: 1000;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+                text-align: center;
+                min-width: 400px;
+            `;
+            
+            downloadWindow.innerHTML = `
+                <div style="color: #2d8b6f; font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">
+                    ダウンロード準備中
+                </div>
+                <div style="color: #8b9aab; margin-bottom: 2rem;">
+                    レポートファイルを準備しています...
+                </div>
+                <div class="loading" style="margin: 0 auto;"></div>
+            `;
+            
+            document.body.appendChild(downloadWindow);
+            
+            setTimeout(() => {
+                downloadWindow.innerHTML = `
+                    <div style="color: #4ecca3; font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">
+                        ✓ ダウンロード完了
+                    </div>
+                    <div style="color: #e0e6ed; margin-bottom: 0.5rem;">
+                        ${getReportName(reportId)}
+                    </div>
+                    <div style="color: #8b9aab; margin-bottom: 2rem; font-size: 0.9rem;">
+                        ファイルサイズ: ${(Math.random() * 2 + 1).toFixed(2)} MB
+                    </div>
+                    <button class="btn-primary" onclick="this.parentElement.parentElement.remove()">
+                        閉じる
+                    </button>
+                `;
+            }, 1500);
+        }
+        
+        function getReportName(reportId) {
+            const names = {
+                'monthly_oct': '月次運転レポート_2025年10月.pdf',
+                'weekly_43': '週次最適化分析_第43週.pdf',
+                'co2_q3': 'CO2削減実績サマリー_Q3.pdf'
+            };
+            return names[reportId] || 'レポート.pdf';
+        }
+
+        // Start animations
+        animationInterval = setInterval(() => {
+            if (currentPage === 'dashboard') {
+                animateMetrics();
+                updateStatusTable();
+                drawRealtimeChart();
+            }
+        }, 2000);
+
+        // Initial update
+        animateMetrics();
+        updateStatusTable();
+        drawRealtimeChart();
+    </script>
+</body>
+</html>
